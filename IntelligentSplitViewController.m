@@ -17,14 +17,14 @@
 	if ((self = [super init])) {
 		NSLog(@"IntelligentSplitViewController using init: and not using a NIB.");
 		// I've actually never attempted to use this class without NIBs, but this should work.
-		
+
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(willRotate:)
 													 name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
-		
+
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didRotate:)
-													 name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];	
+													 name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
 	}
 	return self;
 }
@@ -32,15 +32,15 @@
 - (void)awakeFromNib {
 	[super awakeFromNib];
 	//debug_NSLog(@"IntelligentSplitViewController awaking from a NIB: %@", self.title);
-	
+
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(willRotate:)
 												 name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
 
 	[[NSNotificationCenter defaultCenter] addObserver:self
 											 selector:@selector(didRotate:)
-												 name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];	
-	
+												 name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+
 }
 
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
@@ -82,46 +82,47 @@
 - (void)willRotate:(id)sender {
 	if (![self isViewLoaded]) // we haven't even loaded up yet, let's turn away from this place
 		return;
-		  
+
 	NSNotification *notification = sender;
 	if (!notification)
 		return;
-	
+
 	UIInterfaceOrientation toOrientation = [[notification.userInfo valueForKey:UIApplicationStatusBarOrientationUserInfoKey] integerValue];
 	//UIInterfaceOrientation fromOrientation = [UIApplication sharedApplication].statusBarOrientation;
 
 	UITabBarController *tabBar = self.tabBarController;
 	BOOL notModal = (!tabBar.modalViewController);
 	BOOL isSelectedTab = [self.tabBarController.selectedViewController isEqual:self];
-	
-	NSTimeInterval duration = [[UIApplication sharedApplication] statusBarOrientationAnimationDuration];
-	
 
-	if (!isSelectedTab || !notModal)  { 
+	NSTimeInterval duration = [[UIApplication sharedApplication] statusBarOrientationAnimationDuration];
+
+
+	if (!isSelectedTab || !notModal)  {
 		// Looks like we're not "visible" ... propogate rotation info
 		[super willRotateToInterfaceOrientation:toOrientation duration:duration];
-		
+
 		UIViewController *master = [self.viewControllers objectAtIndex:0];
 		NSObject *theDelegate = (NSObject *)self.delegate;
 
-		
-#define YOU_DONT_FEEL_QUEAZY_ABOUT_THIS_BECAUSE_IT_PASSES_THE_APP_STORE 1		
-		
+
+#define YOU_DONT_FEEL_QUEAZY_ABOUT_THIS_BECAUSE_IT_PASSES_THE_APP_STORE 1
+
 #if YOU_DONT_FEEL_QUEAZY_ABOUT_THIS_BECAUSE_IT_PASSES_THE_APP_STORE
 		UIBarButtonItem *button = [super valueForKey:@"_barButtonItem"];
-		
+
 #else //YOU_DO_FEEL_QUEAZY_AND_FOR_SOME_REASON_YOU_PREFER_THE_LESSER_EVIL_____FRIGHTENING_STUFF
-		UIBarButtonItem *button = [[[[[self.viewControllers objectAtIndex:1] 
-									  viewControllers] objectAtIndex:0] 
+		UIBarButtonItem *button = [[[[[self.viewControllers objectAtIndex:1]
+									  viewControllers] objectAtIndex:0]
 									navigationItem] rightBarButtonItem];
 #endif
-		
+
 		if (UIInterfaceOrientationIsPortrait(toOrientation)) {
 			if (theDelegate && [theDelegate respondsToSelector:@selector(splitViewController:willHideViewController:withBarButtonItem:forPopoverController:)]) {
 
 				@try {
 					UIPopoverController *popover = [super valueForKey:@"_hiddenPopoverController"];
-					objc_msgSend(theDelegate, @selector(splitViewController:willHideViewController:withBarButtonItem:forPopoverController:), self, master, button, popover);
+					void (*response)(id, SEL, id, id, id, id) = (void (*)(id, SEL, id, id, id, id)) objc_msgSend;
+					response (theDelegate, @selector(splitViewController:willHideViewController:withBarButtonItem:forPopoverController:), self, master, button, popover);
 				}
 				@catch (NSException * e) {
 					NSLog(@"There was a nasty error while notifyng splitviewcontrollers of an orientation change: %@", [e description]);
@@ -131,7 +132,8 @@
 		else if (UIInterfaceOrientationIsLandscape(toOrientation)) {
 			if (theDelegate && [theDelegate respondsToSelector:@selector(splitViewController:willShowViewController:invalidatingBarButtonItem:)]) {
 				@try {
-					objc_msgSend(theDelegate, @selector(splitViewController:willShowViewController:invalidatingBarButtonItem:), self, master, button);
+					void (*response)(id, SEL, id, id, id) = (void (*)(id, SEL, id, id, id)) objc_msgSend;
+					response(theDelegate, @selector(splitViewController:willShowViewController:invalidatingBarButtonItem:), self, master, button);
 				}
 				@catch (NSException * e) {
 					NSLog(@"There was a nasty error while notifyng splitviewcontrollers of an orientation change: %@", [e description]);
@@ -139,7 +141,7 @@
 			}
 		}
 	}
-	
+
 	//debug_NSLog(@"MINE WillRotate ---- sender = %@  to = %d   from = %d", [sender class], toOrientation, fromOrientation);
 }
 
@@ -159,16 +161,16 @@
 		return;
 	UIInterfaceOrientation fromOrientation = [[notification.userInfo valueForKey:UIApplicationStatusBarOrientationUserInfoKey] integerValue];
 	//UIInterfaceOrientation toOrientation = [UIApplication sharedApplication].statusBarOrientation;
-	
+
 	UITabBarController *tabBar = self.tabBarController;
 	BOOL notModal = (!tabBar.modalViewController);
 	BOOL isSelectedTab = [self.tabBarController.selectedViewController isEqual:self];
-	
-	if (!isSelectedTab || !notModal)  { 
+
+	if (!isSelectedTab || !notModal)  {
 		// Looks like we're not "visible" ... propogate rotation info
 		[super didRotateFromInterfaceOrientation:fromOrientation];
 	}
-	
+
 	//debug_NSLog(@"MINE DidRotate ---- sender = %@  from = %d   to = %d", [sender class], fromOrientation, toOrientation);
 }
 
